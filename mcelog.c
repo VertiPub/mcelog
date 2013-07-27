@@ -83,12 +83,17 @@ static char *pidfile = pidfile_default;
 static char *logfile;
 static int debug_numerrors;
 int imc_log = -1;
+static int timestamp;
 
 static int is_cpu_supported(void);
 
 
 static void disclaimer(void)
 {
+	if (timestamp) {
+		time_t timestamp = time(NULL);
+		Wprintf("%s\n", ctime(&timestamp));
+	}
 	Wprintf("Hardware event. This is not a software error.\n");
 }
 
@@ -908,12 +913,12 @@ void usage(void)
 "Options:\n"
 "--cpu CPU           Set CPU type CPU to decode (see below for valid types)\n"
 "--cpumhz MHZ        Set CPU Mhz to decode time (output unreliable, not needed on new kernels)\n"
-"--raw		     (with --ascii) Dump in raw ASCII format for machine processing\n"
+"--raw               (with --ascii) Dump in raw ASCII format for machine processing\n"
 "--daemon            Run in background waiting for events (needs newer kernel)\n"
 "--ignorenodev       Exit silently when the device cannot be opened\n"
 "--file filename     With --ascii read machine check log from filename instead of stdin\n"
 "--syslog            Log decoded machine checks in syslog (default stdout or syslog for daemon)\n"
-"--syslog-error	     Log decoded machine checks in syslog with error level\n"
+"--syslog-error      Log decoded machine checks in syslog with error level\n"
 "--no-syslog         Never log anything to syslog\n"
 "--logfile filename  Append log output to logfile instead of stdout\n"
 "--dmi               Use SMBIOS information to decode DIMMs (needs root)\n"
@@ -924,8 +929,9 @@ void usage(void)
 "--config-file filename Read config information from config file instead of " CONFIG_FILENAME "\n"
 "--foreground        Keep in foreground (for debugging)\n"
 "--num-errors N      Only process N errors (for testing)\n"
-"--pidfile file	     Write pid of daemon into file\n"
-"--no-imc-log	     Disable extended iMC logging\n"
+"--pidfile file      Write pid of daemon into file\n"
+"--no-imc-log        Disable extended iMC logging\n"
+"--with-timestamp    With (innacturate) timestamp logging (default off)\n\n"
 		);
 	diskdb_usage();
 	print_cputypes();
@@ -960,6 +966,7 @@ enum options {
 	O_PIDFILE,
 	O_DEBUG_NUMERRORS,
 	O_NO_IMC_LOG,
+	O_TIMESTAMP,
 };
 
 static struct option options[] = {
@@ -993,6 +1000,7 @@ static struct option options[] = {
 	{ "pidfile", 1, NULL, O_PIDFILE },
 	{ "debug-numerrors", 0, NULL, O_DEBUG_NUMERRORS }, /* undocumented: for testing */
 	{ "no-imc-log", 0, NULL, O_NO_IMC_LOG },
+	{ "with-timestamp", 0, NULL, O_TIMESTAMP },
 	DISKDB_OPTIONS
 	{}
 };
@@ -1099,6 +1107,9 @@ static int modifier(int opt)
 		break;
 	case O_NO_IMC_LOG:
 		imc_log = 0;
+		break;
+	case O_TIMESTAMP:
+		timestamp = 1;
 		break;
 	case 0:
 		break;
